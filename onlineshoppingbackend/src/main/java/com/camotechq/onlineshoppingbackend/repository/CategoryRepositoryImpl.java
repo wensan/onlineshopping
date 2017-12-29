@@ -1,54 +1,71 @@
 package com.camotechq.onlineshoppingbackend.repository;
 
-import java.util.ArrayList;
 import java.util.List;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
+import javax.transaction.Transactional;
 
 import org.springframework.stereotype.Repository;
 
 import com.camotechq.onlineshoppingbackend.model.Category;
 
 @Repository("categoryRepository")
+@Transactional
 public class CategoryRepositoryImpl implements CategoryRepository {
-	private static List<Category> categories = new ArrayList<Category>();
 
-	static {
-		Category category = new Category();
-		category.setId(1);
-		category.setName("Television");
-		category.setDescription("Fake Television");
-		category.setImageURL("television.png");
-
-		categories.add(category);
-
-		category = new Category();
-		category.setId(2);
-		category.setName("DVD");
-		category.setDescription("Fake DVD");
-		category.setImageURL("dvd.png");
-
-		categories.add(category);
-
-		category = new Category();
-		category.setId(3);
-		category.setName("Air Condition");
-		category.setDescription("Fake Air Condition");
-		category.setImageURL("aircon.png");
-
-		categories.add(category);
-	}
+	@PersistenceContext
+	private EntityManager em;
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public List<Category> list() {
-		return categories;
+		String sql = "FROM Category WHERE active = :active";
+		Query query = em.createQuery(sql);
+		query.setParameter("active", true);
+
+		return query.getResultList();
 	}
 
 	@Override
 	public Category get(int id) {
-		for (Category category : categories) {
-			if (category.getId() == id) {
-				return category;
-			}
+		return em.find(Category.class, Integer.valueOf(id));
+	}
+
+	@Override
+	@Transactional
+	public boolean add(Category category) {
+		try {
+			em.persist(category);
+			em.flush();
+			return true;
+		} catch(Exception e) {
+			e.printStackTrace();
+			return false;
 		}
-		return null;
+	}
+
+	@Override
+	public boolean update(Category category) {
+		try {
+			em.merge(category);
+			return true;
+		} catch(Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	@Override
+	public boolean delete(Category category) {
+		category.setActive(false);
+		try {
+			em.merge(category);
+			return true;
+		} catch(Exception e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
 }
